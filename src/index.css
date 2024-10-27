@@ -1,3 +1,20 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+body {
+    font-family: Arial, Helvetica, sans-serif;
+    background: #1c1c1c;
+}
+
+/* Hide the calendar icon in WebKit browsers */
+input[type="date"]::-webkit-inner-spin-button,
+input[type="date"]::-webkit-calendar-picker-indicator {
+    display: none; /* Hides the default calendar icon */
+    -webkit-appearance: none; /* Removes the default appearance */
+}
+
+/* Additional styles to remove default appearance in Firefox */
+input[type="date"] {
+    appearance: none; /* Removes the default appearance */
+}
