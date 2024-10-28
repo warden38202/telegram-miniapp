@@ -1,49 +1,70 @@
 import { useEffect, useRef, useState } from "react";
+import { useSpring, animated } from "@react-spring/web";
 import {
     AiOutlineExclamationCircle,
     AiOutlinePlus,
     AiOutlineClose,
     AiOutlineCalendar,
     AiOutlinePaperClip,
-    AiFillCloseCircle
+    AiFillCloseCircle,
+    AiOutlineCheck,
 } from "react-icons/ai";
+import { createClient } from "@supabase/supabase-js";
+
+const supabaseUrl = "https://vlysxpbwlzemmqmxietm.supabase.co";
+const supabaseAnonKey =
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZseXN4cGJ3bHplbW1xbXhpZXRtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzAwMjI4NDEsImV4cCI6MjA0NTU5ODg0MX0.7HR2sIcOGbQoC4XLWc_mqNPW_LmyGHqwYYtMkucvUxM";
 
 const Content = () => {
+    const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
     const [reportStep, setReportStep] = useState(0);
-    const [reportTitle, setReportTitle] = useState('');
-    const [reportType, setReportType] = useState('');
-    const [userId, setUserId] = useState('');
-    const [walletAddress, setWalletAddress] = useState('');
-    const [description, setDescription] = useState('');
-    const [email, setEmail] = useState('');
-    const [phoneNumber, setPhoneNumber] = useState('');
-    const [partiesEmailAddressList, setPartiesEmailAddressList] = useState<string[]>([]);
+    const [reportTitle, setReportTitle] = useState("");
+    const [reportType, setReportType] = useState("");
+    const [userId, setUserId] = useState("");
+    const [walletAddress, setWalletAddress] = useState("");
+    const [description, setDescription] = useState("");
+    const [email, setEmail] = useState("");
+    const [phoneNumber, setPhoneNumber] = useState("");
+    const [partiesEmailAddressList, setPartiesEmailAddressList] = useState<
+        string[]
+    >([""]);
     const [inputErr, setInputErr] = useState({
-        userId: '',
-        walletAddress: '',
+        userId: "",
+        walletAddress: "",
     });
     const [victimInputErr, setVictimInputErr] = useState({
-        email: '',
-        phoneNumber: '',
+        email: "",
+        phoneNumber: "",
     });
-    const [incidentDescription, setIncidentDescription] = useState('');
-    const [incidentDate, setIncidentDate] = useState('');
+    const [incidentDescription, setIncidentDescription] = useState("");
+    const [incidentDate, setIncidentDate] = useState("");
     const [uploadedFile, setUploadedFile] = useState<File | null>(null);
     const [crimeDetailsErr, setCrimeDetailsErr] = useState({
-        description: '',
-        date: '',
+        description: "",
+        date: "",
     });
-    const dateInputRef = useRef(null); // Create a ref for the input
+    const dateInputRef = useRef<HTMLInputElement>(null); // Create a ref for the input
+
+    const [showCheck, setShowCheck] = useState(false);
+
+    // Animation for check icon
+    const checkAnimation = useSpring({
+        opacity: showCheck ? 1 : 0,
+        transform: showCheck ? "scale(1)" : "scale(0.5)",
+        config: { tension: 200, friction: 200 },
+    });
 
     const handleCalendarClick = () => {
         if (dateInputRef.current) {
-            dateInputRef.current.showPicker(); // Open the date picker
+            dateInputRef.current.focus(); // Focus on the date input
+            dateInputRef.current.click(); // Open the date picker
         }
     };
 
     const addEmailAddress = () => {
-        setPartiesEmailAddressList([...partiesEmailAddressList, ''])
-    }
+        setPartiesEmailAddressList([...partiesEmailAddressList, ""]);
+    };
 
     const removeEmailAddress = (index: number) => {
         const newList = partiesEmailAddressList.filter((_, i) => i !== index);
@@ -53,39 +74,39 @@ const Content = () => {
     const selectReportType = (type: string) => {
         setReportType(type);
         setReportStep(1);
-    }
+    };
 
     const cancelReport = () => {
         setReportStep(0);
-        setReportType('');
-    }
+        setReportType("");
+    };
 
     const onNext = () => {
-        let newErrors = { userId: '', walletAddress: '' };
+        let newErrors = { userId: "", walletAddress: "" };
 
-        if (userId === '') {
-            newErrors.userId = 'Fill the User ID';
+        if (userId === "") {
+            newErrors.userId = "Fill the User ID";
         }
-        if (walletAddress === '') {
-            newErrors.walletAddress = 'Fill the Wallet Address';
+        if (walletAddress === "") {
+            newErrors.walletAddress = "Fill the Wallet Address";
         }
 
         setInputErr(newErrors);
 
         // Check for any errors before proceeding
         if (!newErrors.userId && !newErrors.walletAddress) {
-            setReportStep(3)
+            setReportStep(3);
         }
     };
 
     const onNextVictim = () => {
-        let newErrors = { email: '', phoneNumber: '' };
+        let newErrors = { email: "", phoneNumber: "" };
 
-        if (email === '') {
-            newErrors.email = 'Fill the Email';
+        if (email === "") {
+            newErrors.email = "Fill the Email";
         }
-        if (phoneNumber === '') {
-            newErrors.phoneNumber = 'Fill the Phone Number';
+        if (phoneNumber === "") {
+            newErrors.phoneNumber = "Fill the Phone Number";
         }
 
         setVictimInputErr(newErrors);
@@ -97,13 +118,13 @@ const Content = () => {
     };
 
     const onNextCrimeDetails = () => {
-        let newErrors = { description: '', date: '' };
+        let newErrors = { description: "", date: "" };
 
-        if (incidentDescription === '') {
-            newErrors.description = 'Fill the Incident Description';
+        if (incidentDescription === "") {
+            newErrors.description = "Fill the Incident Description";
         }
-        if (incidentDate === '') {
-            newErrors.date = 'Select the Date of Incident';
+        if (incidentDate === "") {
+            newErrors.date = "Select the Date of Incident";
         }
 
         setCrimeDetailsErr(newErrors);
@@ -121,21 +142,112 @@ const Content = () => {
         }
     };
 
+    const onSubmit = async () => {
+        let fileUrl = "";
+
+        if (uploadedFile) {
+            const fileName = `${Date.now()}-${uploadedFile.name}`;
+            const { data: fileData, error: fileError } = await supabase.storage
+                .from("uploads")
+                .upload(fileName, uploadedFile);
+
+            if (fileError) {
+                console.error(fileError);
+                return;
+            }
+
+            fileUrl = supabase.storage.from("uploads").getPublicUrl(fileName)
+                .data.publicUrl;
+        }
+
+        const { data, error } = await supabase.from("report_tbl").insert([
+            {
+                userId: userId,
+                walletAddress: walletAddress,
+                description: description,
+                email: email,
+                phoneNumber: phoneNumber,
+                partiesEmails: partiesEmailAddressList,
+                incidentDescription: incidentDescription,
+                incidentDate: incidentDate,
+                file_url: fileUrl,
+            },
+        ]);
+
+        if (error) {
+            console.error(error);
+        } else {
+            setReportStep(6);
+            setShowCheck(true);
+            setReportTitle("Your report was submitted successfully!");
+        }
+    };
+
     const StartReport = (
         <div className="start-report-content mt-4">
-            <h3 className="text-white text-lg text-center px-4">
-                Choose Crime Type
-            </h3>
+            <h3 className="text-white text-lg text-center px-4">Choose Crime Type</h3>
             <div className="crime-type-list flex flex-wrap gap-3 justify-center mt-4 px-4">
-                <div className={`px-4 flex items-center h-[40px] text-sm w-auto rounded-xl ${reportType === 'ransomeware' ? 'bg-blue-400 text-white' : 'bg-secondary text-[#767677]'}`} onClick={() => selectReportType('ransomeware')}>Ransomeware</div>
-                <div className={`px-4 flex items-center h-[40px] text-sm w-auto rounded-xl ${reportType === 'crypto scam' ? 'bg-blue-400 text-white' : 'bg-secondary text-[#767677]'}`} onClick={() => selectReportType('crypto scam')}>Crypto Scam</div>
-                <div className={`px-4 flex items-center h-[40px] text-sm w-auto rounded-xl ${reportType === 'phishing' ? 'bg-blue-400 text-white' : 'bg-secondary text-[#767677]'}`} onClick={() => selectReportType('phishing')}>Phishing</div>
-                <div className={`px-4 flex items-center h-[40px] text-sm w-auto rounded-xl ${reportType === 'fake channel' ? 'bg-blue-400 text-white' : 'bg-secondary text-[#767677]'}`} onClick={() => selectReportType('fake channel')}>Fake Channels</div>
-                <div className={`px-4 flex items-center h-[40px] text-sm w-auto rounded-xl ${reportType === 'fake job listing' ? 'bg-blue-400 text-white' : 'bg-secondary text-[#767677]'}`} onClick={() => selectReportType('fake job listing')}>Fake job listings</div>
-                <div className={`px-4 flex items-center h-[40px] text-sm w-auto rounded-xl ${reportType === 'other' ? 'bg-blue-400 text-white' : 'bg-secondary text-[#767677]'}`} onClick={() => selectReportType('other')}>Others</div>
+                <div
+                    className={`px-4 flex items-center h-[40px] text-sm w-auto rounded-xl cursor-pointer cursor-pointer ${reportType === "ransomeware"
+                            ? "bg-blue-400 text-white"
+                            : "bg-secondary text-[#767677]"
+                        }`}
+                    onClick={() => selectReportType("ransomeware")}
+                >
+                    Ransomeware
+                </div>
+                <div
+                    className={`px-4 flex items-center h-[40px] text-sm w-auto rounded-xl cursor-pointer ${reportType === "crypto scam"
+                            ? "bg-blue-400 text-white"
+                            : "bg-secondary text-[#767677]"
+                        }`}
+                    onClick={() => selectReportType("crypto scam")}
+                >
+                    Crypto Scam
+                </div>
+                <div
+                    className={`px-4 flex items-center h-[40px] text-sm w-auto rounded-xl cursor-pointer ${reportType === "phishing"
+                            ? "bg-blue-400 text-white"
+                            : "bg-secondary text-[#767677]"
+                        }`}
+                    onClick={() => selectReportType("phishing")}
+                >
+                    Phishing
+                </div>
+                <div
+                    className={`px-4 flex items-center h-[40px] text-sm w-auto rounded-xl cursor-pointer ${reportType === "fake channel"
+                            ? "bg-blue-400 text-white"
+                            : "bg-secondary text-[#767677]"
+                        }`}
+                    onClick={() => selectReportType("fake channel")}
+                >
+                    Fake Channels
+                </div>
+                <div
+                    className={`px-4 flex items-center h-[40px] text-sm w-auto rounded-xl cursor-pointer ${reportType === "fake job listing"
+                            ? "bg-blue-400 text-white"
+                            : "bg-secondary text-[#767677]"
+                        }`}
+                    onClick={() => selectReportType("fake job listing")}
+                >
+                    Fake job listings
+                </div>
+                <div
+                    className={`px-4 flex items-center h-[40px] text-sm w-auto rounded-xl cursor-pointer ${reportType === "other"
+                            ? "bg-blue-400 text-white"
+                            : "bg-secondary text-[#767677]"
+                        }`}
+                    onClick={() => selectReportType("other")}
+                >
+                    Others
+                </div>
             </div>
             <div className="w-full px-4 absolute bottom-[120px]">
-                <button className={`rounded-md text-xm w-full h-[45px] text-[#a8a8a8] bg-[#5b5b5b]`}>NEXT</button>
+                <button
+                    className={`rounded-md text-xm w-full h-[45px] text-[#a8a8a8] bg-[#5b5b5b]`}
+                >
+                    NEXT
+                </button>
             </div>
         </div>
     );
@@ -143,16 +255,74 @@ const Content = () => {
     const CrimeType = (
         <div className="crime-type-content mt-4">
             <div className="crime-type-list flex flex-wrap gap-3 justify-center px-4">
-                <div className={`px-4 flex items-center h-[40px] text-sm w-auto rounded-xl ${reportType === 'ransomeware' ? 'bg-blue-400 text-white' : 'bg-secondary text-[#767677]'}`} onClick={() => setReportType('ransomeware')}>Ransomeware</div>
-                <div className={`px-4 flex items-center h-[40px] text-sm w-auto rounded-xl ${reportType === 'crypto scam' ? 'bg-blue-400 text-white' : 'bg-secondary text-[#767677]'}`} onClick={() => setReportType('crypto scam')}>Crypto Scam</div>
-                <div className={`px-4 flex items-center h-[40px] text-sm w-auto rounded-xl ${reportType === 'phishing' ? 'bg-blue-400 text-white' : 'bg-secondary text-[#767677]'}`} onClick={() => setReportType('phishing')}>Phishing</div>
-                <div className={`px-4 flex items-center h-[40px] text-sm w-auto rounded-xl ${reportType === 'fake channel' ? 'bg-blue-400 text-white' : 'bg-secondary text-[#767677]'}`} onClick={() => setReportType('fake channel')}>Fake Channels</div>
-                <div className={`px-4 flex items-center h-[40px] text-sm w-auto rounded-xl ${reportType === 'fake job listing' ? 'bg-blue-400 text-white' : 'bg-secondary text-[#767677]'}`} onClick={() => setReportType('fake job listing')}>Fake job listings</div>
-                <div className={`px-4 flex items-center h-[40px] text-sm w-auto rounded-xl ${reportType === 'other' ? 'bg-blue-400 text-white' : 'bg-secondary text-[#767677]'}`} onClick={() => setReportType('other')}>Others</div>
+                <div
+                    className={`px-4 flex items-center h-[40px] text-sm w-auto rounded-xl cursor-pointer ${reportType === "ransomeware"
+                            ? "bg-blue-400 text-white"
+                            : "bg-secondary text-[#767677]"
+                        }`}
+                    onClick={() => setReportType("ransomeware")}
+                >
+                    Ransomeware
+                </div>
+                <div
+                    className={`px-4 flex items-center h-[40px] text-sm w-auto rounded-xl cursor-pointer ${reportType === "crypto scam"
+                            ? "bg-blue-400 text-white"
+                            : "bg-secondary text-[#767677]"
+                        }`}
+                    onClick={() => setReportType("crypto scam")}
+                >
+                    Crypto Scam
+                </div>
+                <div
+                    className={`px-4 flex items-center h-[40px] text-sm w-auto rounded-xl cursor-pointer ${reportType === "phishing"
+                            ? "bg-blue-400 text-white"
+                            : "bg-secondary text-[#767677]"
+                        }`}
+                    onClick={() => setReportType("phishing")}
+                >
+                    Phishing
+                </div>
+                <div
+                    className={`px-4 flex items-center h-[40px] text-sm w-auto rounded-xl cursor-pointer ${reportType === "fake channel"
+                            ? "bg-blue-400 text-white"
+                            : "bg-secondary text-[#767677]"
+                        }`}
+                    onClick={() => setReportType("fake channel")}
+                >
+                    Fake Channels
+                </div>
+                <div
+                    className={`px-4 flex items-center h-[40px] text-sm w-auto rounded-xl cursor-pointer ${reportType === "fake job listing"
+                            ? "bg-blue-400 text-white"
+                            : "bg-secondary text-[#767677]"
+                        }`}
+                    onClick={() => setReportType("fake job listing")}
+                >
+                    Fake job listings
+                </div>
+                <div
+                    className={`px-4 flex items-center h-[40px] text-sm w-auto rounded-xl cursor-pointer ${reportType === "other"
+                            ? "bg-blue-400 text-white"
+                            : "bg-secondary text-[#767677]"
+                        }`}
+                    onClick={() => setReportType("other")}
+                >
+                    Others
+                </div>
             </div>
             <div className="flex justify-between btn-group gap-3 mt-5 w-full px-4 absolute bottom-[120px]">
-                <button className="w-1/2 border-[1px] rounded-md text-sm h-[42px] text-blue-400 border-blue-400" onClick={() => cancelReport()}>CANCEL</button>
-                <button className="w-1/2 border-[1px] rounded-md text-sm h-[42px] text-white border-blue-400 bg-blue-400" onClick={() => setReportStep(2)}>NEXT</button>
+                <button
+                    className="w-1/2 border-[1px] rounded-md text-sm h-[42px] text-blue-400 border-blue-400"
+                    onClick={() => cancelReport()}
+                >
+                    CANCEL
+                </button>
+                <button
+                    className="w-1/2 border-[1px] rounded-md text-sm h-[42px] text-white border-blue-400 bg-blue-400"
+                    onClick={() => setReportStep(2)}
+                >
+                    NEXT
+                </button>
             </div>
         </div>
     );
@@ -161,34 +331,61 @@ const Content = () => {
         <div className="suspect-information overflow-scroll h-[calc(100vh-282px)]">
             <div className="px-4">
                 <div className="flex flex-col my-4">
-                    <label htmlFor="userId" className="text-gray-500 text-md">User ID</label>
-                    <input id="userId" className="bg-[#2f2f2f] rounded-md p-2 mt-1 text-sm h-[40px] text-white"
+                    <label htmlFor="userId" className="text-gray-500 text-md">
+                        User ID
+                    </label>
+                    <input
+                        id="userId"
+                        className="bg-[#2f2f2f] rounded-md p-2 mt-1 text-sm h-[40px] text-white"
                         placeholder="Enter User ID"
                         onChange={(e) => setUserId(e.target.value)}
-                        value={userId} />
-                    {inputErr.userId && <span className="text-red-700 text-xs mt-1">{inputErr.userId}</span>}
+                        value={userId}
+                    />
+                    {inputErr.userId && (
+                        <span className="text-red-700 text-xs mt-1">{inputErr.userId}</span>
+                    )}
                 </div>
                 <div className="flex flex-col my-4">
-                    <label htmlFor="walletAddress" className="text-gray-500 text-md">Wallet Address</label>
-                    <input id="walletAddress" className="bg-[#2f2f2f] rounded-md p-2 mt-1 text-sm h-[40px] text-white"
+                    <label htmlFor="walletAddress" className="text-gray-500 text-md">
+                        Wallet Address
+                    </label>
+                    <input
+                        id="walletAddress"
+                        className="bg-[#2f2f2f] rounded-md p-2 mt-1 text-sm h-[40px] text-white"
                         placeholder="Enter Wallet address"
                         onChange={(e) => setWalletAddress(e.target.value)}
-                        value={walletAddress} />
-                    {inputErr.walletAddress && <span className="text-red-700 text-xs mt-1">{inputErr.walletAddress}</span>}
+                        value={walletAddress}
+                    />
+                    {inputErr.walletAddress && (
+                        <span className="text-red-700 text-xs mt-1">
+                            {inputErr.walletAddress}
+                        </span>
+                    )}
                 </div>
                 <div className="flex flex-col my-4">
                     <label className="text-gray-500 text-md">Additional Details</label>
-                    <textarea rows={3} className="bg-[#2f2f2f] rounded-md p-2 mt-1 text-sm text-white"
+                    <textarea
+                        rows={3}
+                        className="bg-[#2f2f2f] rounded-md p-2 mt-1 text-sm text-white"
                         placeholder="Enter additional details"
                         onChange={(e) => setDescription(e.target.value)}
-                        value={description} />
+                        value={description}
+                    />
                 </div>
             </div>
             <div className="flex justify-between btn-group gap-3 w-full px-4 mb-[38px]">
-                <button className="w-1/2 border-[1px] rounded-md text-xm text-sm h-[42px] text-blue-400 border-blue-400"
-                    onClick={() => setReportStep(1)}>BACK</button>
-                <button className="w-1/2 border-[1px] rounded-md text-xm text-sm h-[42px] text-white border-blue-400 bg-blue-400"
-                    onClick={onNext}>NEXT</button>
+                <button
+                    className="w-1/2 border-[1px] rounded-md text-xm text-sm h-[42px] text-blue-400 border-blue-400"
+                    onClick={() => setReportStep(1)}
+                >
+                    BACK
+                </button>
+                <button
+                    className="w-1/2 border-[1px] rounded-md text-xm text-sm h-[42px] text-white border-blue-400 bg-blue-400"
+                    onClick={onNext}
+                >
+                    NEXT
+                </button>
             </div>
         </div>
     );
@@ -205,7 +402,9 @@ const Content = () => {
                         onChange={(e) => setEmail(e.target.value)}
                     />
                     {victimInputErr.email && (
-                        <span className="text-red-700 text-xs mt-1">{victimInputErr.email}</span>
+                        <span className="text-red-700 text-xs mt-1">
+                            {victimInputErr.email}
+                        </span>
                     )}
                 </div>
                 <div className="flex flex-col my-4">
@@ -217,14 +416,19 @@ const Content = () => {
                         onChange={(e) => setPhoneNumber(e.target.value)}
                     />
                     {victimInputErr.phoneNumber && (
-                        <span className="text-red-700 text-xs mt-1">{victimInputErr.phoneNumber}</span>
+                        <span className="text-red-700 text-xs mt-1">
+                            {victimInputErr.phoneNumber}
+                        </span>
                     )}
                 </div>
                 <div className="flex flex-col my-4">
                     <label className="text-gray-500 text-md">Involved Parties</label>
                     {partiesEmailAddressList.length !== 0 ? (
                         partiesEmailAddressList.map((item, index) => (
-                            <div className="flex items-center justify-between mt-1 gap-2" key={index}>
+                            <div
+                                className="flex items-center justify-between mt-1 gap-2"
+                                key={index}
+                            >
                                 <input
                                     className="bg-[#2f2f2f] rounded-md p-2 w-full text-sm h-[40px] text-white"
                                     placeholder="Enter email"
@@ -238,7 +442,7 @@ const Content = () => {
                                 {index === partiesEmailAddressList.length - 1 ? (
                                     <div
                                         className="bg-primary w-[40px] h-[40px] text-center rounded-md flex justify-center items-center cursor-pointer"
-                                        onClick={addEmailAddress}
+                                        onClick={() => addEmailAddress()}
                                     >
                                         <AiOutlinePlus color="white" size={24} />
                                     </div>
@@ -257,7 +461,13 @@ const Content = () => {
                             <input
                                 className="bg-[#2f2f2f] rounded-md p-2 w-full text-sm h-[40px] text-white"
                                 placeholder="Enter email"
-                                onChange={(e) => setPartiesEmailAddressList([e.target.value])}
+                                onChange={(e) =>
+                                    setPartiesEmailAddressList((prevList) => {
+                                        const newList = [...prevList];
+                                        newList[0] = e.target.value;
+                                        return newList;
+                                    })
+                                }
                             />
                             <div
                                 className="bg-primary w-[40px] h-[40px] text-center rounded-md flex justify-center items-center cursor-pointer"
@@ -270,8 +480,18 @@ const Content = () => {
                 </div>
             </div>
             <div className="flex justify-between btn-group gap-3 w-full px-4 mb-[38px]">
-                <button className="w-1/2 border-[1px] rounded-md text-xm text-sm h-[42px] text-blue-400 border-blue-400" onClick={() => setReportStep(2)}>BACK</button>
-                <button className="w-1/2 border-[1px] rounded-md text-xm text-sm h-[42px] text-white border-blue-400 bg-blue-400" onClick={onNextVictim}>NEXT</button>
+                <button
+                    className="w-1/2 border-[1px] rounded-md text-xm text-sm h-[42px] text-blue-400 border-blue-400"
+                    onClick={() => setReportStep(2)}
+                >
+                    BACK
+                </button>
+                <button
+                    className="w-1/2 border-[1px] rounded-md text-xm text-sm h-[42px] text-white border-blue-400 bg-blue-400"
+                    onClick={onNextVictim}
+                >
+                    NEXT
+                </button>
             </div>
         </div>
     );
@@ -289,7 +509,9 @@ const Content = () => {
                         onChange={(e) => setIncidentDescription(e.target.value)}
                     />
                     {crimeDetailsErr.description && (
-                        <span className="text-red-700 text-xs mt-1">{crimeDetailsErr.description}</span>
+                        <span className="text-red-700 text-xs mt-1">
+                            {crimeDetailsErr.description}
+                        </span>
                     )}
                 </div>
                 <div className="flex flex-col my-4 relative">
@@ -301,9 +523,14 @@ const Content = () => {
                         value={incidentDate}
                         onChange={(e) => setIncidentDate(e.target.value)}
                     />
-                    <AiOutlineCalendar className="absolute bottom-3 right-2 text-white" onClick={handleCalendarClick} />
+                    <AiOutlineCalendar
+                        className="absolute bottom-3 right-2 text-white"
+                        onClick={() => handleCalendarClick()}
+                    />
                     {crimeDetailsErr.date && (
-                        <span className="text-red-700 text-xs mt-1">{crimeDetailsErr.date}</span>
+                        <span className="text-red-700 text-xs mt-1">
+                            {crimeDetailsErr.date}
+                        </span>
                     )}
                 </div>
                 <div className="flex flex-col my-4">
@@ -311,13 +538,21 @@ const Content = () => {
                     <div className="relative">
                         <input
                             className="bg-[#2f2f2f] rounded-md p-2 mt-1 text-sm h-[40px] text-white w-full"
-                            onClick={() => document.getElementById('fileInput').click()}
+                            onClick={() => document.getElementById("fileInput").click()}
                             readOnly
                             placeholder="Upload Evidence"
                         />
-                        <AiOutlinePaperClip color="white" className="absolute bottom-3 right-2" />
+                        <AiOutlinePaperClip
+                            color="white"
+                            className="absolute bottom-3 right-2"
+                        />
                     </div>
-                    <input type="file" onChange={handleFileChange} className='hidden' id="fileInput" />
+                    <input
+                        type="file"
+                        onChange={handleFileChange}
+                        className="hidden"
+                        id="fileInput"
+                    />
                     {uploadedFile && (
                         <div className="mt-2 p-2 bg-[#424242] rounded-md flex items-center justify-between">
                             <div className="flex flex-col">
@@ -337,8 +572,18 @@ const Content = () => {
                 </div>
             </div>
             <div className="flex justify-between btn-group gap-3 w-full px-4 mb-[38px]">
-                <button className="w-1/2 border-[1px] rounded-md text-xm text-sm h-[42px] text-blue-400 border-blue-400" onClick={() => setReportStep(3)}>BACK</button>
-                <button className="w-1/2 border-[1px] rounded-md text-xm text-sm h-[42px] text-white border-blue-400 bg-blue-400" onClick={onNextCrimeDetails}>NEXT</button>
+                <button
+                    className="w-1/2 border-[1px] rounded-md text-xm text-sm h-[42px] text-blue-400 border-blue-400"
+                    onClick={() => setReportStep(3)}
+                >
+                    BACK
+                </button>
+                <button
+                    className="w-1/2 border-[1px] rounded-md text-xm text-sm h-[42px] text-white border-blue-400 bg-blue-400"
+                    onClick={onNextCrimeDetails}
+                >
+                    NEXT
+                </button>
             </div>
         </div>
     );
@@ -347,14 +592,18 @@ const Content = () => {
         <div className="review-submit overflow-scroll h-[calc(100vh-282px)]">
             <div className="px-4">
                 <div className="mt-5">
-                    <h3 className="p-2 bg-[#2f2f2f] text-[#c0c0c0] rounded-t-md">Choose Crime Type</h3>
+                    <h3 className="p-2 bg-[#2f2f2f] text-[#c0c0c0] rounded-t-md">
+                        Choose Crime Type
+                    </h3>
                     <div className="p-3 bg-[#232323] flex items-center gap-2 rounded-b-md">
                         <AiOutlineExclamationCircle size={24} color="#dcdcdc" />
                         <span className="text-[#dcdcdc] text-sm">{reportType}</span>
                     </div>
                 </div>
                 <div className="mt-4">
-                    <h3 className="p-2 bg-[#2f2f2f] text-[#c0c0c0] rounded-t-md">Suspect Information</h3>
+                    <h3 className="p-2 bg-[#2f2f2f] text-[#c0c0c0] rounded-t-md">
+                        Suspect Information
+                    </h3>
                     <div className="p-3 bg-[#232323] flex flex-col">
                         <label className="text-[#9b9ba1] text-md">USER ID</label>
                         <span className="text-[#dcdcdc] text-sm">{userId}</span>
@@ -375,7 +624,9 @@ const Content = () => {
                     </div>
                 </div>
                 <div className="mt-4">
-                    <h3 className="p-2 bg-[#2f2f2f] text-[#c0c0c0] rounded-t-md">Victim Information</h3>
+                    <h3 className="p-2 bg-[#2f2f2f] text-[#c0c0c0] rounded-t-md">
+                        Victim Information
+                    </h3>
                     <div className="p-3 bg-[#232323] flex flex-col">
                         <label className="text-[#9b9ba1] text-md">EMAIL</label>
                         <span className="text-[#dcdcdc] text-sm">{email}</span>
@@ -391,26 +642,36 @@ const Content = () => {
                         <div className="bg-[#393939] w-full h-[1px]"></div>
                     </div>
                     <div className="p-3 bg-[#232323] rounded-b-md flex flex-col">
-                        <label className="text-[#9b9ba1] text-md">ADDITIONAL INFORMATION</label>
-                        <span className="text-[#dcdcdc] text-sm">Additional Information is here...</span>
+                        <label className="text-[#9b9ba1] text-md">
+                            ADDITIONAL INFORMATION
+                        </label>
+                        <span className="text-[#dcdcdc] text-sm">
+                            Additional Information is here...
+                        </span>
                     </div>
                     <div className="px-3 w-full bg-[#232323]">
                         <div className="bg-[#393939] w-full h-[1px]"></div>
                     </div>
                     <div className="p-3 bg-[#232323] rounded-b-md flex flex-col">
                         <label className="text-[#9b9ba1] text-md">INVOLVED PARTIES</label>
-                        {
-                            partiesEmailAddressList.map((item, index) => (
-                                <span className="text-[#dcdcdc] text-sm" key={index}>{item}</span>
-                            ))
-                        }
+                        {partiesEmailAddressList.map((item, index) => (
+                            <span className="text-[#dcdcdc] text-sm" key={index}>
+                                {item}
+                            </span>
+                        ))}
                     </div>
                 </div>
                 <div className="mt-4">
-                    <h3 className="p-2 bg-[#2f2f2f] text-[#c0c0c0] rounded-t-md">Crime Details</h3>
+                    <h3 className="p-2 bg-[#2f2f2f] text-[#c0c0c0] rounded-t-md">
+                        Crime Details
+                    </h3>
                     <div className="p-3 bg-[#232323] flex flex-col">
-                        <label className="text-[#9b9ba1] text-md">INCIDENT DESCRIPTION</label>
-                        <span className="text-[#dcdcdc] text-sm">{incidentDescription}</span>
+                        <label className="text-[#9b9ba1] text-md">
+                            INCIDENT DESCRIPTION
+                        </label>
+                        <span className="text-[#dcdcdc] text-sm">
+                            {incidentDescription}
+                        </span>
                     </div>
                     <div className="px-3 w-full bg-[#232323]">
                         <div className="bg-[#393939] w-full h-[1px]"></div>
@@ -424,21 +685,43 @@ const Content = () => {
                     </div>
                     <div className="p-3 bg-[#232323] rounded-b-md flex flex-col">
                         <label className="text-[#9b9ba1] text-md">EVIDENCE</label>
-                        <span className="text-[#dcdcdc] text-sm bg-[#2f2f2f] p-2 rounded-md mt-1">{uploadedFile?.name}</span>
+                        <span className="text-[#dcdcdc] text-sm bg-[#2f2f2f] p-2 rounded-md mt-1">
+                            {uploadedFile?.name}
+                        </span>
                     </div>
                     <div className="px-3 w-full bg-[#232323]">
                         <div className="bg-[#393939] w-full h-[1px]"></div>
                     </div>
                     <div className="p-3 bg-[#232323] rounded-b-md flex flex-col">
                         <label className="text-[#9b9ba1] text-md">EXPORT MESSAGES</label>
-                        <span className="text-[#dcdcdc] text-sm bg-[#2f2f2f] p-2 rounded-md mt-1">export_messages01</span>
+                        <span className="text-[#dcdcdc] text-sm bg-[#2f2f2f] p-2 rounded-md mt-1">
+                            export_messages01
+                        </span>
                     </div>
                 </div>
             </div>
             <div className="flex justify-between btn-group gap-3 w-full px-4 mt-5">
-                <button className="w-1/2 border-[1px] rounded-md text-xm text-sm h-[42px] text-blue-400 border-blue-400" onClick={() => setReportStep(4)}>EDIT</button>
-                <button className="w-1/2 border-[1px] rounded-md text-xm text-sm h-[42px] text-white border-blue-400 bg-blue-400" onClick={() => setReportStep(6)}>SUBMIT</button>
+                <button
+                    className="w-1/2 border-[1px] rounded-md text-xm text-sm h-[42px] text-blue-400 border-blue-400"
+                    onClick={() => setReportStep(4)}
+                >
+                    EDIT
+                </button>
+                <button
+                    className="w-1/2 border-[1px] rounded-md text-xm text-sm h-[42px] text-white border-blue-400 bg-blue-400"
+                    onClick={() => onSubmit()}
+                >
+                    SUBMIT
+                </button>
             </div>
+        </div>
+    );
+
+    const SubmitedReport = (
+        <div className="flex justify-center items-center">
+            <animated.div style={checkAnimation}>
+                {showCheck && <AiOutlineCheck size={250} color="green" />}
+            </animated.div>
         </div>
     );
 
@@ -449,49 +732,148 @@ const Content = () => {
         VictimInformation,
         CrimeDetails,
         ReviewSubmit,
+        SubmitedReport,
     ];
 
     useEffect(() => {
-        reportStep === 0 ? setReportTitle('Crime Type') : reportStep === 1 ? setReportTitle('Choose Crime Type') : reportStep === 2 ? setReportTitle('Suspect Information') : reportStep === 3 ? setReportTitle('Victim Information') : reportStep === 4 ? setReportTitle('Crime Details') : setReportTitle('Review and Submit');
+        reportStep === 0
+            ? setReportTitle("Crime Type")
+            : reportStep === 1
+                ? setReportTitle("Choose Crime Type")
+                : reportStep === 2
+                    ? setReportTitle("Suspect Information")
+                    : reportStep === 3
+                        ? setReportTitle("Victim Information")
+                        : reportStep === 4
+                            ? setReportTitle("Crime Details")
+                            : reportStep === 5
+                                ? setReportTitle("Review and Submit")
+                                : setReportTitle("Your Report was submitted successfully!");
     }, [reportStep]);
 
     return (
         <div>
             <div className="report-header flex p-4 gap-2">
                 <div className="report-header-item flex items-center">
-                    <div className={`${reportStep === 0 || reportStep === 1 ? 'bg-primary' : 'bg-secondary'} rounded-full w-[40px] h-[40px] text-white text-center text-xl flex items-center justify-center`}>1</div>
-                    {(reportStep === 0 || reportStep === 1) && <label className="text-white text-md ml-2 w-[150px]">Crime Type</label>}
+                    {reportStep === 6 ? (
+                        <div
+                            className={`bg-[green] rounded-full w-[40px] h-[40px] text-white text-center text-xl flex items-center justify-center`}
+                        >
+                            <AiOutlineCheck size={30} color="white" />
+                        </div>
+                    ) : (
+                        <div
+                            className={`${reportStep === 0 || reportStep === 1
+                                    ? "bg-primary"
+                                    : "bg-secondary"
+                                } rounded-full w-[40px] h-[40px] text-white text-center text-xl flex items-center justify-center`}
+                        >
+                            1
+                        </div>
+                    )}
+                    {(reportStep === 0 || reportStep === 1) && (
+                        <label className="text-white text-md ml-2 w-[150px]">
+                            Crime Type
+                        </label>
+                    )}
                 </div>
                 <div className="report-header-item flex items-center">
-                    <div className={`${reportStep === 2 ? 'bg-primary' : 'bg-secondary'} rounded-full w-[40px] h-[40px] text-white text-center text-xl flex items-center justify-center`}>2</div>
-                    {reportStep === 2 && <label className="text-white text-md ml-2 w-[150px]">Suspect Information</label>}
+                    {reportStep === 6 ? (
+                        <div
+                            className={`bg-[green] rounded-full w-[40px] h-[40px] text-white text-center text-xl flex items-center justify-center`}
+                        >
+                            <AiOutlineCheck size={30} color="white" />
+                        </div>
+                    ) : (
+                        <div
+                            className={`${reportStep === 2 ? "bg-primary" : "bg-secondary"
+                                } rounded-full w-[40px] h-[40px] text-white text-center text-xl flex items-center justify-center`}
+                        >
+                            2
+                        </div>
+                    )}
+                    {reportStep === 2 && (
+                        <label className="text-white text-md ml-2 w-[150px]">
+                            Suspect Information
+                        </label>
+                    )}
                 </div>
                 <div className="report-header-item flex items-center">
-                    <div className={`${reportStep === 3 ? 'bg-primary' : 'bg-secondary'} rounded-full w-[40px] h-[40px] text-white text-center text-xl flex items-center justify-center`}>3</div>
-                    {reportStep === 3 && <label className="text-white text-md ml-2 w-[150px]">Victim Information</label>}
+                    {reportStep === 6 ? (
+                        <div
+                            className={`bg-[green] rounded-full w-[40px] h-[40px] text-white text-center text-xl flex items-center justify-center`}
+                        >
+                            <AiOutlineCheck size={30} color="white" />
+                        </div>
+                    ) : (
+                        <div
+                            className={`${reportStep === 3 ? "bg-primary" : "bg-secondary"
+                                } rounded-full w-[40px] h-[40px] text-white text-center text-xl flex items-center justify-center`}
+                        >
+                            3
+                        </div>
+                    )}
+                    {reportStep === 3 && (
+                        <label className="text-white text-md ml-2 w-[150px]">
+                            Victim Information
+                        </label>
+                    )}
                 </div>
                 <div className="report-header-item flex items-center">
-                    <div className={`${reportStep === 4 ? 'bg-primary' : 'bg-secondary'} rounded-full w-[40px] h-[40px] text-white text-center text-xl flex items-center justify-center`}>4</div>
-                    {reportStep === 4 && <label className="text-white text-md ml-2 w-[150px]">Crime Details</label>}
+                    {reportStep === 6 ? (
+                        <div
+                            className={`bg-[green] rounded-full w-[40px] h-[40px] text-white text-center text-xl flex items-center justify-center`}
+                        >
+                            <AiOutlineCheck size={30} color="white" />
+                        </div>
+                    ) : (
+                        <div
+                            className={`${reportStep === 4 ? "bg-primary" : "bg-secondary"
+                                } rounded-full w-[40px] h-[40px] text-white text-center text-xl flex items-center justify-center`}
+                        >
+                            4
+                        </div>
+                    )}
+                    {reportStep === 4 && (
+                        <label className="text-white text-md ml-2 w-[150px]">
+                            Crime Details
+                        </label>
+                    )}
                 </div>
                 <div className="report-header-item flex items-center">
-                    <div className={`${reportStep === 5 ? 'bg-primary' : 'bg-secondary'} rounded-full w-[40px] h-[40px] text-white text-center text-xl flex items-center justify-center`}>5</div>
-                    {reportStep === 5 && <label className="text-white text-md ml-2">Review & Submit</label>}
+                    {reportStep === 6 ? (
+                        <div
+                            className={`bg-[green] rounded-full w-[40px] h-[40px] text-white text-center text-xl flex items-center justify-center`}
+                        >
+                            <AiOutlineCheck size={30} color="white" />
+                        </div>
+                    ) : (
+                        <div
+                            className={`${reportStep === 5 ? "bg-primary" : "bg-secondary"
+                                } rounded-full w-[40px] h-[40px] text-white text-center text-xl flex items-center justify-center`}
+                        >
+                            5
+                        </div>
+                    )}
+                    {reportStep === 5 && (
+                        <label className="text-white text-md ml-2">Review & Submit</label>
+                    )}
                 </div>
             </div>
             <div className="report-content">
                 <div className="report-step-title py-7 text-center border-y-[1px] border-[#3e3e3e]">
-                    <h3 className="text-white text-2xl">
-                        {reportTitle}
-                    </h3>
-                    {reportStep === 0 && <p className="text-[#bcbcbc] text-md mt-2">Consectetur adipiscing elit. Vivamus rutrum nunc quis ipsum aliquam dictum. Pellentesque.</p>}
+                    <h3 className="text-white text-2xl">{reportTitle}</h3>
+                    {reportStep === 0 && (
+                        <p className="text-[#bcbcbc] text-md mt-2">
+                            Consectetur adipiscing elit. Vivamus rutrum nunc quis ipsum
+                            aliquam dictum. Pellentesque.
+                        </p>
+                    )}
                 </div>
-                <div className="py-2">
-                    {reportContentAry[reportStep]}
-                </div>
+                <div className="py-2">{reportContentAry[reportStep]}</div>
             </div>
         </div>
-    )
-}
+    );
+};
 
 export default Content;
