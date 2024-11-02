@@ -39,7 +39,7 @@ To set up and run this application on your local machine, follow these steps:
 1. **Clone the Repository**:
     ```bash
     git clone https://github.com/warden38202/telegram-miniapp.git
-    cd tgminireportapp
+    cd telegram-miniapp
     ```
 
 2. **Install Dependencies**:
