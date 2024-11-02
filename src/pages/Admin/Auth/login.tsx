@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import AmdinProtectBG from "../../assets/images/admin-login-bg.png"
+import AmdinProtectBG from "../../../assets/images/admin-login-bg.png"
 
 const Login = () => {
     const navigate = useNavigate();

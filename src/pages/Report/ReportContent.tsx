@@ -12,20 +12,6 @@ import {
 import axios from 'axios';
 import { baseUrl } from "../../utils/axiosClient";
 
-interface ReportData {
-    reportType: string;
-    userId: string;
-    walletAddress: string;
-    amount: String;
-    description?: string;
-    email: string;
-    phoneNumber: string;
-    partiesEmails: string[];
-    incidentDescription: string;
-    incidentDate: string | Date;
-    file_url?: string;
-}
-
 const ReportContent = () => {
     const [reportStep, setReportStep] = useState(0);
     const [reportTitle, setReportTitle] = useState("");
@@ -573,7 +559,13 @@ const ReportContent = () => {
                     <div className="relative">
                         <input
                             className="bg-[#2f2f2f] rounded-md p-2 mt-1 text-sm h-[40px] text-white w-full"
-                            onClick={() => document.getElementById("fileInput").click()}
+                            onClick={() => {
+                                const fileInput = document.getElementById('fileInput');
+                                
+                                if(fileInput) {
+                                    fileInput.click();
+                                }
+                            }}
                             readOnly
                             placeholder="Upload Evidence"
                         />

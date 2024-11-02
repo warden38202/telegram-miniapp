@@ -1,6 +1,5 @@
-import Dashboard from "./Dashboard"
 import IncidentReport from "./IncidentReport";
-import Sidebar from "./Sidebar"
+import Sidebar from "../../layout/Sidebar"
 
 const AdminHome = () => {
     return (

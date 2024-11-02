@@ -1,4 +1,4 @@
-import StatsCards from './StatsCards';
+import StatsCards from '../../components/StatsCard';
 import CasesTable from './CasesTable';
 
 function Dashboard() {

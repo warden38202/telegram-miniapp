@@ -1,4 +1,4 @@
-import { AiOutlineDashboard, AiOutlineUser, AiOutlineArrowRight } from 'react-icons/ai';
+import { AiOutlineDashboard, AiOutlineUser } from 'react-icons/ai';
 import { FiSettings, FiFileText } from 'react-icons/fi';
 
 function Sidebar() {

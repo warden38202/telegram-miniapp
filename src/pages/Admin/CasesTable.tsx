@@ -5,7 +5,7 @@ function CasesTable() {
       { id: 'lex231456799', user: 'johndoe321', type: 'Online Fraud', date: '25-10-2024', status: 'Pending' },
     ];
   
-    const statusColor = {
+    const statusColor: any = {
       Completed: 'text-completed',
       'In Progress': 'text-in-progress',
       Pending: 'text-pending',
