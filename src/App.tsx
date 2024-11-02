@@ -1,9 +1,9 @@
 import './App.css'
 import AdminHome from './pages/Admin/AdminHome'
-import Login from './pages/Admin/login'
+import Login from './pages/Admin/Auth/login'
 import Home from './pages/Home'
 import Report from './pages/Report/Report'
-import { Routes, Route, Link } from 'react-router-dom'
+import { Routes, Route } from 'react-router-dom'
 
 function App() {
   return (
